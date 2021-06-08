@@ -8,7 +8,7 @@ using System.Text;
 
 namespace ApiAuth
 {
-    public class HttpClient
+    public class HttpClient : IDisposable
     {
         private const string AuthorizationContentHeaderName =
             "X-Authorization-Content-SHA256";
@@ -16,9 +16,22 @@ namespace ApiAuth
         private static readonly object _noGcLock = new object();
         private SecureString _apiKeyId;
         private SecureString _apiSecretKey;
+        private string _authorizationPrefix;
 
         private HttpClient()
         {
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+
+        protected void Dispose(bool disposing)
+        {
+            if (disposing) {
+                GC.SuppressFinalize(this);
+            }
         }
 
         public string ApiKeyId
@@ -34,18 +47,14 @@ namespace ApiAuth
             }
         }
 
-        public string ApiSecretKey
+        public SecureString ApiSecretKey
         {
-            set
-            {
-                _apiSecretKey = new SecureString();
-                foreach (char scannedCharacter in value
-                    ?? throw new ArgumentNullException("ApiSecretKey"))
-                {
-                    _apiSecretKey.AppendChar(scannedCharacter);
-                }
-                _apiSecretKey.MakeReadOnly();
-            }
+            set { _apiSecretKey = value.Copy(); }
+        }
+
+        public string AuthorizationPrefix
+        {
+            set { _authorizationPrefix = value; }
         }
 
         public static HttpClient Create()
